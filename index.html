@@ -1,0 +1,1020 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+	<meta charset="UTF-8">
+		<script type="text/javascript" async="" src="js/events.js"></script><script type="text/javascript" async="" src="js/events_2.js"></script><script async="" src="https://www.clarity.ms/tag/gvap6fq548?ref=wordpress"></script><script type="text/javascript" async="" src="js/events_1.js"></script><script async="" src="js/fbevents.js"></script><script>
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [key, value] = cookie.trim().split('=');
+        if (key === name) {
+            return value;
+        }
+    }
+    return null;
+}
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0,
+                v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+async function sendEvent(eventType, data = {}) {
+    const contentName = 'Kit Atividades de Grafismo Fonetico';
+    const contentId = '4728332';
+    const eventId = generateUUID();
+
+    const customEvents = ['Scroll_25', 'Scroll_50', 'Scroll_75', 'Scroll_90', 'Timer_1min', 'PlayVideo', 'ViewVideo_25', 'ViewVideo_50', 'ViewVideo_75', 'ViewVideo_90'];
+    const specialEvents = ['AddToCart', 'InitiateCheckout', 'Lead'];
+
+    if (specialEvents.includes(eventType)) { updateUserDataFromForm(); }
+
+    const _customData = {
+        content_name: contentName,
+        content_ids: contentId,
+        ...(specialEvents.includes(eventType) && {
+            value: data.value || 0,
+            currency: data.currency || 'BRL'
+        })
+    };
+
+    const _userData = { eventID: eventId, ...userData };
+
+    if (eventType !== "Init" && eventType !== "UpdateUserData" && !customEvents.includes(eventType)) {
+        fbq('track', eventType, _customData, _userData);
+    } else if (eventType !== "Init" && eventType !== "UpdateUserData") {
+        fbq('trackCustom', eventType, _customData, _userData);
+    }
+
+    try {
+        const URL = window.location.href;
+        const payload = { userId, contentName, contentId, eventType, eventId, URL,
+            fbc: data.fbc || userData.fbc || null,
+            fbp: data.fbp || userData.fbp || null,
+			fn: userData.fn || null,
+			ln: userData.ln || null,
+			em: userData.em || null,
+			ph: userData.ph || null,
+        };
+        const response = await fetch('https://api.educacaokids.com.br/events/send', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        if (eventType == "Init") {
+            const responseData = await response.json();
+            return responseData;
+        }
+    } catch (e) {
+        console.error(`Erro ao rastrear evento de ${eventType}:`, e);
+    }
+}
+
+// SE HOUVER FORMULÁRIO, COLOQUE O ATRIBUTO “NAME”
+function updateUserDataFromForm() {
+    let names, fn, ln, em, ph;
+    names = document.querySelector('[name="NOME"]')?.value.trim().toLowerCase() || '';
+    em = document.querySelector('[name="EMAIL"]')?.value.trim().toLowerCase() || '';
+    ph = document.querySelector('[name="TELEFONE"]')?.value.replace(/\s|-/g, '') || '';
+   // SE HOUVER SOBRENOME, SE NÃO, DEIXE ASSIM MESMO
+    const surnameField = document.querySelector('[name="SOBRENOME"]');
+    if (surnameField) {
+        fn = names;
+        ln = surnameField.value.trim().toLowerCase() || '';
+    } else {
+        const nameParts = names.split(' ');
+        fn = nameParts[0] || '';
+        ln = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+    }
+
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 100);
+    const expires = `expires=${date.toUTCString()}; path=/; domain=${window.location.hostname.split('.').slice(-2).join('.')}`;
+    document.cookie = `fn=${fn}; ${expires}`;
+    document.cookie = `ln=${ln}; ${expires}`;
+    document.cookie = `em=${em}; ${expires}`;
+    document.cookie = `ph=${ph.replace(/%20/g, '')}; ${expires}`;
+
+    userData = {
+        ...userData,
+        ...(fn && { fn }),
+        ...(ln && { ln }),
+        ...(em && { em }),
+        ...(ph && { ph })
+    };
+}
+
+let userData = {};
+let [userId, fbc, fbp, fn, ln, em, ph] = ["userId", "_fbc", "_fbp", "fn", "ln", "em", "ph"].map(getCookie);
+
+if (!userId) {
+    userId = generateUUID();
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 100); // Expira em 100 anos
+    document.cookie = `userId=${userId}; expires=${date.toUTCString()}; path=/`;
+}
+	
+(async () => {
+    const data = await sendEvent('Init') || {};
+
+    userData = {
+        ...(data.ct && { ct: data.ct }),
+        ...(data.st && { st: data.st }),
+        ...(data.zp && { zp: data.zp }),
+        ...(data.country && { country: data.country }),
+        ...(data.client_ip_address && { client_ip_address: data.client_ip_address }),
+        ...(data.client_user_agent && { client_user_agent: data.client_user_agent }),
+        ...(data.fbc || fbc ? { fbc: data.fbc || fbc } : {}),
+        ...(data.fbp || fbp ? { fbp: data.fbp || fbp } : {}),
+        ...(userId && { external_id: userId }),
+        ...(fn && { fn }),
+        ...(ln && { ln }),
+        ...(em && { em }),
+        ...(ph && { ph })
+    };
+
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1660778964363473', userData);
+    sendEvent('PageView');
+    updateUserData()
+})();
+
+function updateUserData() {
+    const checkInterval = 100;
+    const maxWaitTime = 15000;
+    let waited = 0;
+
+    const interval = setInterval(() => {
+        const fbc = getCookie('_fbc');
+        const fbp = getCookie('_fbp');
+
+        if (fbc || fbp) {
+            clearInterval(interval);
+            sendEvent('UpdateUserData', { userId, fbc, fbp });
+        } else {
+            waited += checkInterval;
+            if (waited >= maxWaitTime) {
+                clearInterval(interval);
+            }
+        }
+    }, checkInterval);
+}
+</script>
+<title>Kit Atividades Grafismo Fonético – Kit Educação Kids</title>
+<meta name="robots" content="max-image-preview:large">
+	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
+	<link rel="alternate" type="application/rss+xml" title="Feed para Kit Educação Kids »" href="https://educacaokids.com.br/feed/">
+<link rel="alternate" type="application/rss+xml" title="Feed de comentários para Kit Educação Kids »" href="https://educacaokids.com.br/comments/feed/">
+<script>
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.1.0\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.1.0\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/educacaokids.com.br\/wp-includes\/js\/wp-emoji-release.min.js?ver=6.8.1"}};
+/*! This file is auto-generated */
+!function(i,n){var o,s,e;function c(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(o,JSON.stringify(t))}catch(e){}}function p(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data),r=(e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0),new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data));return t.every(function(e,t){return e===r[t]})}function u(e,t,n){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\uddfa\ud83c\uddf3","\ud83c\uddfa\u200b\ud83c\uddf3")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!n(e,"\ud83d\udc26\u200d\ud83d\udd25","\ud83d\udc26\u200b\ud83d\udd25")}return!1}function f(e,t,n){var r="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):i.createElement("canvas"),a=r.getContext("2d",{willReadFrequently:!0}),o=(a.textBaseline="top",a.font="600 32px Arial",{});return e.forEach(function(e){o[e]=t(a,e,n)}),o}function t(e){var t=i.createElement("script");t.src=e,t.defer=!0,i.head.appendChild(t)}"undefined"!=typeof Promise&&(o="wpEmojiSettingsSupports",s=["flag","emoji"],n.supports={everything:!0,everythingExceptFlag:!0},e=new Promise(function(e){i.addEventListener("DOMContentLoaded",e,{once:!0})}),new Promise(function(t){var n=function(){try{var e=JSON.parse(sessionStorage.getItem(o));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(s),u.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"}),a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=function(e){c(n=e.data),a.terminate(),t(n)})}catch(e){}c(n=f(s,u,p))}t(n)}).then(function(e){for(var t in e)n.supports[t]=e[t],n.supports.everything=n.supports.everything&&n.supports[t],"flag"!==t&&(n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&n.supports[t]);n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&!n.supports.flag,n.DOMReady=!1,n.readyCallback=function(){n.DOMReady=!0}}).then(function(){return e}).then(function(){var e;n.supports.everything||(n.readyCallback(),(e=n.source||{}).concatemoji?t(e.concatemoji):e.wpemoji&&e.twemoji&&(t(e.twemoji),t(e.wpemoji)))}))}((window,document),window._wpemojiSettings);
+</script>
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<link rel="stylesheet" id="wp-block-library-css" href="css/style.min_1.css" media="all">
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:root { --wp--style--global--content-size: 800px;--wp--style--global--wide-size: 1200px; }:where(body) { margin: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.wp-site-blocks) > * { margin-block-start: 24px; margin-block-end: 0; }:where(.wp-site-blocks) > :first-child { margin-block-start: 0; }:where(.wp-site-blocks) > :last-child { margin-block-end: 0; }:root { --wp--style--block-gap: 24px; }:root :where(.is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.is-layout-flow) > *{margin-block-start: 24px;margin-block-end: 0;}:root :where(.is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.is-layout-constrained) > *{margin-block-start: 24px;margin-block-end: 0;}:root :where(.is-layout-flex){gap: 24px;}:root :where(.is-layout-grid){gap: 24px;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignwide{max-width: var(--wp--style--global--wide-size);}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}a:where(:not(.wp-element-button)){text-decoration: underline;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;line-height: inherit;padding: calc(0.667em + 2px) calc(1.333em + 2px);text-decoration: none;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+:root :where(.wp-block-pullquote){font-size: 1.5em;line-height: 1.6;}
+</style>
+<link rel="stylesheet" id="url-shortify-css" href="css/url-shortify.css" media="all">
+<link rel="stylesheet" id="hello-elementor-css" href="css/style.min.css" media="all">
+<link rel="stylesheet" id="hello-elementor-theme-style-css" href="css/theme.min.css" media="all">
+<link rel="stylesheet" id="hello-elementor-header-footer-css" href="css/header-footer.min.css" media="all">
+<link rel="stylesheet" id="elementor-frontend-css" href="css/frontend.min.css" media="all">
+<style id="elementor-frontend-inline-css">
+@-webkit-keyframes ha_fadeIn{0%{opacity:0}to{opacity:1}}@keyframes ha_fadeIn{0%{opacity:0}to{opacity:1}}@-webkit-keyframes ha_zoomIn{0%{opacity:0;-webkit-transform:scale3d(.3,.3,.3);transform:scale3d(.3,.3,.3)}50%{opacity:1}}@keyframes ha_zoomIn{0%{opacity:0;-webkit-transform:scale3d(.3,.3,.3);transform:scale3d(.3,.3,.3)}50%{opacity:1}}@-webkit-keyframes ha_rollIn{0%{opacity:0;-webkit-transform:translate3d(-100%,0,0) rotate3d(0,0,1,-120deg);transform:translate3d(-100%,0,0) rotate3d(0,0,1,-120deg)}to{opacity:1}}@keyframes ha_rollIn{0%{opacity:0;-webkit-transform:translate3d(-100%,0,0) rotate3d(0,0,1,-120deg);transform:translate3d(-100%,0,0) rotate3d(0,0,1,-120deg)}to{opacity:1}}@-webkit-keyframes ha_bounce{0%,20%,53%,to{-webkit-animation-timing-function:cubic-bezier(.215,.61,.355,1);animation-timing-function:cubic-bezier(.215,.61,.355,1)}40%,43%{-webkit-transform:translate3d(0,-30px,0) scaleY(1.1);transform:translate3d(0,-30px,0) scaleY(1.1);-webkit-animation-timing-function:cubic-bezier(.755,.05,.855,.06);animation-timing-function:cubic-bezier(.755,.05,.855,.06)}70%{-webkit-transform:translate3d(0,-15px,0) scaleY(1.05);transform:translate3d(0,-15px,0) scaleY(1.05);-webkit-animation-timing-function:cubic-bezier(.755,.05,.855,.06);animation-timing-function:cubic-bezier(.755,.05,.855,.06)}80%{-webkit-transition-timing-function:cubic-bezier(.215,.61,.355,1);transition-timing-function:cubic-bezier(.215,.61,.355,1);-webkit-transform:translate3d(0,0,0) scaleY(.95);transform:translate3d(0,0,0) scaleY(.95)}90%{-webkit-transform:translate3d(0,-4px,0) scaleY(1.02);transform:translate3d(0,-4px,0) scaleY(1.02)}}@keyframes ha_bounce{0%,20%,53%,to{-webkit-animation-timing-function:cubic-bezier(.215,.61,.355,1);animation-timing-function:cubic-bezier(.215,.61,.355,1)}40%,43%{-webkit-transform:translate3d(0,-30px,0) scaleY(1.1);transform:translate3d(0,-30px,0) scaleY(1.1);-webkit-animation-timing-function:cubic-bezier(.755,.05,.855,.06);animation-timing-function:cubic-bezier(.755,.05,.855,.06)}70%{-webkit-transform:translate3d(0,-15px,0) scaleY(1.05);transform:translate3d(0,-15px,0) scaleY(1.05);-webkit-animation-timing-function:cubic-bezier(.755,.05,.855,.06);animation-timing-function:cubic-bezier(.755,.05,.855,.06)}80%{-webkit-transition-timing-function:cubic-bezier(.215,.61,.355,1);transition-timing-function:cubic-bezier(.215,.61,.355,1);-webkit-transform:translate3d(0,0,0) scaleY(.95);transform:translate3d(0,0,0) scaleY(.95)}90%{-webkit-transform:translate3d(0,-4px,0) scaleY(1.02);transform:translate3d(0,-4px,0) scaleY(1.02)}}@-webkit-keyframes ha_bounceIn{0%,20%,40%,60%,80%,to{-webkit-animation-timing-function:cubic-bezier(.215,.61,.355,1);animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;-webkit-transform:scale3d(.3,.3,.3);transform:scale3d(.3,.3,.3)}20%{-webkit-transform:scale3d(1.1,1.1,1.1);transform:scale3d(1.1,1.1,1.1)}40%{-webkit-transform:scale3d(.9,.9,.9);transform:scale3d(.9,.9,.9)}60%{opacity:1;-webkit-transform:scale3d(1.03,1.03,1.03);transform:scale3d(1.03,1.03,1.03)}80%{-webkit-transform:scale3d(.97,.97,.97);transform:scale3d(.97,.97,.97)}to{opacity:1}}@keyframes ha_bounceIn{0%,20%,40%,60%,80%,to{-webkit-animation-timing-function:cubic-bezier(.215,.61,.355,1);animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;-webkit-transform:scale3d(.3,.3,.3);transform:scale3d(.3,.3,.3)}20%{-webkit-transform:scale3d(1.1,1.1,1.1);transform:scale3d(1.1,1.1,1.1)}40%{-webkit-transform:scale3d(.9,.9,.9);transform:scale3d(.9,.9,.9)}60%{opacity:1;-webkit-transform:scale3d(1.03,1.03,1.03);transform:scale3d(1.03,1.03,1.03)}80%{-webkit-transform:scale3d(.97,.97,.97);transform:scale3d(.97,.97,.97)}to{opacity:1}}@-webkit-keyframes ha_flipInX{0%{opacity:0;-webkit-transform:perspective(400px) rotate3d(1,0,0,90deg);transform:perspective(400px) rotate3d(1,0,0,90deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}40%{-webkit-transform:perspective(400px) rotate3d(1,0,0,-20deg);transform:perspective(400px) rotate3d(1,0,0,-20deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}60%{opacity:1;-webkit-transform:perspective(400px) rotate3d(1,0,0,10deg);transform:perspective(400px) rotate3d(1,0,0,10deg)}80%{-webkit-transform:perspective(400px) rotate3d(1,0,0,-5deg);transform:perspective(400px) rotate3d(1,0,0,-5deg)}}@keyframes ha_flipInX{0%{opacity:0;-webkit-transform:perspective(400px) rotate3d(1,0,0,90deg);transform:perspective(400px) rotate3d(1,0,0,90deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}40%{-webkit-transform:perspective(400px) rotate3d(1,0,0,-20deg);transform:perspective(400px) rotate3d(1,0,0,-20deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}60%{opacity:1;-webkit-transform:perspective(400px) rotate3d(1,0,0,10deg);transform:perspective(400px) rotate3d(1,0,0,10deg)}80%{-webkit-transform:perspective(400px) rotate3d(1,0,0,-5deg);transform:perspective(400px) rotate3d(1,0,0,-5deg)}}@-webkit-keyframes ha_flipInY{0%{opacity:0;-webkit-transform:perspective(400px) rotate3d(0,1,0,90deg);transform:perspective(400px) rotate3d(0,1,0,90deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}40%{-webkit-transform:perspective(400px) rotate3d(0,1,0,-20deg);transform:perspective(400px) rotate3d(0,1,0,-20deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}60%{opacity:1;-webkit-transform:perspective(400px) rotate3d(0,1,0,10deg);transform:perspective(400px) rotate3d(0,1,0,10deg)}80%{-webkit-transform:perspective(400px) rotate3d(0,1,0,-5deg);transform:perspective(400px) rotate3d(0,1,0,-5deg)}}@keyframes ha_flipInY{0%{opacity:0;-webkit-transform:perspective(400px) rotate3d(0,1,0,90deg);transform:perspective(400px) rotate3d(0,1,0,90deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}40%{-webkit-transform:perspective(400px) rotate3d(0,1,0,-20deg);transform:perspective(400px) rotate3d(0,1,0,-20deg);-webkit-animation-timing-function:ease-in;animation-timing-function:ease-in}60%{opacity:1;-webkit-transform:perspective(400px) rotate3d(0,1,0,10deg);transform:perspective(400px) rotate3d(0,1,0,10deg)}80%{-webkit-transform:perspective(400px) rotate3d(0,1,0,-5deg);transform:perspective(400px) rotate3d(0,1,0,-5deg)}}@-webkit-keyframes ha_swing{20%{-webkit-transform:rotate3d(0,0,1,15deg);transform:rotate3d(0,0,1,15deg)}40%{-webkit-transform:rotate3d(0,0,1,-10deg);transform:rotate3d(0,0,1,-10deg)}60%{-webkit-transform:rotate3d(0,0,1,5deg);transform:rotate3d(0,0,1,5deg)}80%{-webkit-transform:rotate3d(0,0,1,-5deg);transform:rotate3d(0,0,1,-5deg)}}@keyframes ha_swing{20%{-webkit-transform:rotate3d(0,0,1,15deg);transform:rotate3d(0,0,1,15deg)}40%{-webkit-transform:rotate3d(0,0,1,-10deg);transform:rotate3d(0,0,1,-10deg)}60%{-webkit-transform:rotate3d(0,0,1,5deg);transform:rotate3d(0,0,1,5deg)}80%{-webkit-transform:rotate3d(0,0,1,-5deg);transform:rotate3d(0,0,1,-5deg)}}@-webkit-keyframes ha_slideInDown{0%{visibility:visible;-webkit-transform:translate3d(0,-100%,0);transform:translate3d(0,-100%,0)}}@keyframes ha_slideInDown{0%{visibility:visible;-webkit-transform:translate3d(0,-100%,0);transform:translate3d(0,-100%,0)}}@-webkit-keyframes ha_slideInUp{0%{visibility:visible;-webkit-transform:translate3d(0,100%,0);transform:translate3d(0,100%,0)}}@keyframes ha_slideInUp{0%{visibility:visible;-webkit-transform:translate3d(0,100%,0);transform:translate3d(0,100%,0)}}@-webkit-keyframes ha_slideInLeft{0%{visibility:visible;-webkit-transform:translate3d(-100%,0,0);transform:translate3d(-100%,0,0)}}@keyframes ha_slideInLeft{0%{visibility:visible;-webkit-transform:translate3d(-100%,0,0);transform:translate3d(-100%,0,0)}}@-webkit-keyframes ha_slideInRight{0%{visibility:visible;-webkit-transform:translate3d(100%,0,0);transform:translate3d(100%,0,0)}}@keyframes ha_slideInRight{0%{visibility:visible;-webkit-transform:translate3d(100%,0,0);transform:translate3d(100%,0,0)}}.ha_fadeIn{-webkit-animation-name:ha_fadeIn;animation-name:ha_fadeIn}.ha_zoomIn{-webkit-animation-name:ha_zoomIn;animation-name:ha_zoomIn}.ha_rollIn{-webkit-animation-name:ha_rollIn;animation-name:ha_rollIn}.ha_bounce{-webkit-transform-origin:center bottom;-ms-transform-origin:center bottom;transform-origin:center bottom;-webkit-animation-name:ha_bounce;animation-name:ha_bounce}.ha_bounceIn{-webkit-animation-name:ha_bounceIn;animation-name:ha_bounceIn;-webkit-animation-duration:.75s;-webkit-animation-duration:calc(var(--animate-duration)*.75);animation-duration:.75s;animation-duration:calc(var(--animate-duration)*.75)}.ha_flipInX,.ha_flipInY{-webkit-animation-name:ha_flipInX;animation-name:ha_flipInX;-webkit-backface-visibility:visible!important;backface-visibility:visible!important}.ha_flipInY{-webkit-animation-name:ha_flipInY;animation-name:ha_flipInY}.ha_swing{-webkit-transform-origin:top center;-ms-transform-origin:top center;transform-origin:top center;-webkit-animation-name:ha_swing;animation-name:ha_swing}.ha_slideInDown{-webkit-animation-name:ha_slideInDown;animation-name:ha_slideInDown}.ha_slideInUp{-webkit-animation-name:ha_slideInUp;animation-name:ha_slideInUp}.ha_slideInLeft{-webkit-animation-name:ha_slideInLeft;animation-name:ha_slideInLeft}.ha_slideInRight{-webkit-animation-name:ha_slideInRight;animation-name:ha_slideInRight}.ha-css-transform-yes{-webkit-transition-duration:var(--ha-tfx-transition-duration, .2s);transition-duration:var(--ha-tfx-transition-duration, .2s);-webkit-transition-property:-webkit-transform;transition-property:transform;transition-property:transform,-webkit-transform;-webkit-transform:translate(var(--ha-tfx-translate-x, 0),var(--ha-tfx-translate-y, 0)) scale(var(--ha-tfx-scale-x, 1),var(--ha-tfx-scale-y, 1)) skew(var(--ha-tfx-skew-x, 0),var(--ha-tfx-skew-y, 0)) rotateX(var(--ha-tfx-rotate-x, 0)) rotateY(var(--ha-tfx-rotate-y, 0)) rotateZ(var(--ha-tfx-rotate-z, 0));transform:translate(var(--ha-tfx-translate-x, 0),var(--ha-tfx-translate-y, 0)) scale(var(--ha-tfx-scale-x, 1),var(--ha-tfx-scale-y, 1)) skew(var(--ha-tfx-skew-x, 0),var(--ha-tfx-skew-y, 0)) rotateX(var(--ha-tfx-rotate-x, 0)) rotateY(var(--ha-tfx-rotate-y, 0)) rotateZ(var(--ha-tfx-rotate-z, 0))}.ha-css-transform-yes:hover{-webkit-transform:translate(var(--ha-tfx-translate-x-hover, var(--ha-tfx-translate-x, 0)),var(--ha-tfx-translate-y-hover, var(--ha-tfx-translate-y, 0))) scale(var(--ha-tfx-scale-x-hover, var(--ha-tfx-scale-x, 1)),var(--ha-tfx-scale-y-hover, var(--ha-tfx-scale-y, 1))) skew(var(--ha-tfx-skew-x-hover, var(--ha-tfx-skew-x, 0)),var(--ha-tfx-skew-y-hover, var(--ha-tfx-skew-y, 0))) rotateX(var(--ha-tfx-rotate-x-hover, var(--ha-tfx-rotate-x, 0))) rotateY(var(--ha-tfx-rotate-y-hover, var(--ha-tfx-rotate-y, 0))) rotateZ(var(--ha-tfx-rotate-z-hover, var(--ha-tfx-rotate-z, 0)));transform:translate(var(--ha-tfx-translate-x-hover, var(--ha-tfx-translate-x, 0)),var(--ha-tfx-translate-y-hover, var(--ha-tfx-translate-y, 0))) scale(var(--ha-tfx-scale-x-hover, var(--ha-tfx-scale-x, 1)),var(--ha-tfx-scale-y-hover, var(--ha-tfx-scale-y, 1))) skew(var(--ha-tfx-skew-x-hover, var(--ha-tfx-skew-x, 0)),var(--ha-tfx-skew-y-hover, var(--ha-tfx-skew-y, 0))) rotateX(var(--ha-tfx-rotate-x-hover, var(--ha-tfx-rotate-x, 0))) rotateY(var(--ha-tfx-rotate-y-hover, var(--ha-tfx-rotate-y, 0))) rotateZ(var(--ha-tfx-rotate-z-hover, var(--ha-tfx-rotate-z, 0)))}.happy-addon>.elementor-widget-container{word-wrap:break-word;overflow-wrap:break-word}.happy-addon>.elementor-widget-container,.happy-addon>.elementor-widget-container *{-webkit-box-sizing:border-box;box-sizing:border-box}.happy-addon p:empty{display:none}.happy-addon .elementor-inline-editing{min-height:auto!important}.happy-addon-pro img{max-width:100%;height:auto;-o-object-fit:cover;object-fit:cover}.ha-screen-reader-text{position:absolute;overflow:hidden;clip:rect(1px,1px,1px,1px);margin:-1px;padding:0;width:1px;height:1px;border:0;word-wrap:normal!important;-webkit-clip-path:inset(50%);clip-path:inset(50%)}.ha-has-bg-overlay>.elementor-widget-container{position:relative;z-index:1}.ha-has-bg-overlay>.elementor-widget-container:before{position:absolute;top:0;left:0;z-index:-1;width:100%;height:100%;content:""}.ha-popup--is-enabled .ha-js-popup,.ha-popup--is-enabled .ha-js-popup img{cursor:-webkit-zoom-in!important;cursor:zoom-in!important}.mfp-wrap .mfp-arrow,.mfp-wrap .mfp-close{background-color:transparent}.mfp-wrap .mfp-arrow:focus,.mfp-wrap .mfp-close:focus{outline-width:thin}.ha-advanced-tooltip-enable{position:relative;cursor:pointer;--ha-tooltip-arrow-color:black;--ha-tooltip-arrow-distance:0}.ha-advanced-tooltip-enable .ha-advanced-tooltip-content{position:absolute;z-index:999;display:none;padding:5px 0;width:120px;height:auto;border-radius:6px;background-color:#000;color:#fff;text-align:center;opacity:0}.ha-advanced-tooltip-enable .ha-advanced-tooltip-content::after{position:absolute;border-width:5px;border-style:solid;content:""}.ha-advanced-tooltip-enable .ha-advanced-tooltip-content.no-arrow::after{visibility:hidden}.ha-advanced-tooltip-enable .ha-advanced-tooltip-content.show{display:inline-block;opacity:1}.ha-advanced-tooltip-enable.ha-advanced-tooltip-top .ha-advanced-tooltip-content,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-top .ha-advanced-tooltip-content{top:unset;right:0;bottom:calc(101% + var(--ha-tooltip-arrow-distance));left:0;margin:0 auto}.ha-advanced-tooltip-enable.ha-advanced-tooltip-top .ha-advanced-tooltip-content::after,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-top .ha-advanced-tooltip-content::after{top:100%;right:unset;bottom:unset;left:50%;border-color:var(--ha-tooltip-arrow-color) transparent transparent transparent;-webkit-transform:translateX(-50%);-ms-transform:translateX(-50%);transform:translateX(-50%)}.ha-advanced-tooltip-enable.ha-advanced-tooltip-bottom .ha-advanced-tooltip-content,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-bottom .ha-advanced-tooltip-content{top:calc(101% + var(--ha-tooltip-arrow-distance));right:0;bottom:unset;left:0;margin:0 auto}.ha-advanced-tooltip-enable.ha-advanced-tooltip-bottom .ha-advanced-tooltip-content::after,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-bottom .ha-advanced-tooltip-content::after{top:unset;right:unset;bottom:100%;left:50%;border-color:transparent transparent var(--ha-tooltip-arrow-color) transparent;-webkit-transform:translateX(-50%);-ms-transform:translateX(-50%);transform:translateX(-50%)}.ha-advanced-tooltip-enable.ha-advanced-tooltip-left .ha-advanced-tooltip-content,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-left .ha-advanced-tooltip-content{top:50%;right:calc(101% + var(--ha-tooltip-arrow-distance));bottom:unset;left:unset;-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}.ha-advanced-tooltip-enable.ha-advanced-tooltip-left .ha-advanced-tooltip-content::after,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-left .ha-advanced-tooltip-content::after{top:50%;right:unset;bottom:unset;left:100%;border-color:transparent transparent transparent var(--ha-tooltip-arrow-color);-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}.ha-advanced-tooltip-enable.ha-advanced-tooltip-right .ha-advanced-tooltip-content,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-right .ha-advanced-tooltip-content{top:50%;right:unset;bottom:unset;left:calc(101% + var(--ha-tooltip-arrow-distance));-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}.ha-advanced-tooltip-enable.ha-advanced-tooltip-right .ha-advanced-tooltip-content::after,body[data-elementor-device-mode=tablet] .ha-advanced-tooltip-enable.ha-advanced-tooltip-tablet-right .ha-advanced-tooltip-content::after{top:50%;right:100%;bottom:unset;left:unset;border-color:transparent var(--ha-tooltip-arrow-color) transparent transparent;-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-top .ha-advanced-tooltip-content{top:unset;right:0;bottom:calc(101% + var(--ha-tooltip-arrow-distance));left:0;margin:0 auto}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-top .ha-advanced-tooltip-content::after{top:100%;right:unset;bottom:unset;left:50%;border-color:var(--ha-tooltip-arrow-color) transparent transparent transparent;-webkit-transform:translateX(-50%);-ms-transform:translateX(-50%);transform:translateX(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-bottom .ha-advanced-tooltip-content{top:calc(101% + var(--ha-tooltip-arrow-distance));right:0;bottom:unset;left:0;margin:0 auto}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-bottom .ha-advanced-tooltip-content::after{top:unset;right:unset;bottom:100%;left:50%;border-color:transparent transparent var(--ha-tooltip-arrow-color) transparent;-webkit-transform:translateX(-50%);-ms-transform:translateX(-50%);transform:translateX(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-left .ha-advanced-tooltip-content{top:50%;right:calc(101% + var(--ha-tooltip-arrow-distance));bottom:unset;left:unset;-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-left .ha-advanced-tooltip-content::after{top:50%;right:unset;bottom:unset;left:100%;border-color:transparent transparent transparent var(--ha-tooltip-arrow-color);-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-right .ha-advanced-tooltip-content{top:50%;right:unset;bottom:unset;left:calc(101% + var(--ha-tooltip-arrow-distance));-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}body[data-elementor-device-mode=mobile] .ha-advanced-tooltip-enable.ha-advanced-tooltip-mobile-right .ha-advanced-tooltip-content::after{top:50%;right:100%;bottom:unset;left:unset;border-color:transparent var(--ha-tooltip-arrow-color) transparent transparent;-webkit-transform:translateY(-50%);-ms-transform:translateY(-50%);transform:translateY(-50%)}body.elementor-editor-active .happy-addon.ha-gravityforms .gform_wrapper{display:block!important}.ha-scroll-to-top-wrap.ha-scroll-to-top-hide{display:none}.ha-scroll-to-top-wrap.edit-mode,.ha-scroll-to-top-wrap.single-page-off{display:none!important}.ha-scroll-to-top-button{position:fixed;right:15px;bottom:15px;z-index:9999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;align-items:center;-ms-flex-align:center;-webkit-box-pack:center;-ms-flex-pack:center;-webkit-justify-content:center;justify-content:center;width:50px;height:50px;border-radius:50px;background-color:#5636d1;color:#fff;text-align:center;opacity:1;cursor:pointer;-webkit-transition:all .3s;transition:all .3s}.ha-scroll-to-top-button i{color:#fff;font-size:16px}.ha-scroll-to-top-button:hover{background-color:#e2498a}
+</style>
+<link rel="stylesheet" id="elementor-post-11-css" href="css/post-11.css" media="all">
+<link rel="stylesheet" id="widget-image-css" href="css/widget-image.min.css" media="all">
+<link rel="stylesheet" id="widget-heading-css" href="css/widget-heading.min.css" media="all">
+<link rel="stylesheet" id="e-animation-grow-css" href="css/e-animation-grow.min.css" media="all">
+<link rel="stylesheet" id="widget-image-box-css" href="css/widget-image-box.min.css" media="all">
+<link rel="stylesheet" id="widget-menu-anchor-css" href="css/widget-menu-anchor.min.css" media="all">
+<link rel="stylesheet" id="widget-icon-box-css" href="css/widget-icon-box.min.css" media="all">
+<link rel="stylesheet" id="e-animation-flash-css" href="css/flash.min.css" media="all">
+<link rel="stylesheet" id="e-animation-fadeInUp-css" href="css/fadeInUp.min.css" media="all">
+<link rel="stylesheet" id="widget-toggle-css" href="css/widget-toggle.min.css" media="all">
+<link rel="stylesheet" id="elementor-post-1332-css" href="css/post-1332.css" media="all">
+<link rel="stylesheet" id="happy-icons-css" href="css/style.min_2.css" media="all">
+<link rel="stylesheet" id="font-awesome-css" href="css/font-awesome.min.css" media="all">
+<link rel="stylesheet" id="elementor-gf-local-roboto-css" href="css/roboto.css" media="all">
+<link rel="stylesheet" id="elementor-gf-local-robotoslab-css" href="css/robotoslab.css" media="all">
+<link rel="stylesheet" id="elementor-gf-local-poppins-css" href="css/poppins.css" media="all">
+<script src="js/jquery.min.js" id="jquery-core-js"></script>
+<script src="js/jquery-migrate.min.js" id="jquery-migrate-js"></script>
+<script id="tt4b_ajax_script-js-extra">
+var tt4b_script_vars = {"pixel_code":"CTICVOJC77U8ATAVI74G","currency":"","country":"BR","advanced_matching":"1"};
+</script>
+<script src="js/ajaxSnippet.js" id="tt4b_ajax_script-js"></script>
+<script id="url-shortify-js-extra">
+var usParams = {"ajaxurl":"https:\/\/educacaokids.com.br\/wp-admin\/admin-ajax.php"};
+</script>
+<script src="js/url-shortify.js" id="url-shortify-js"></script>
+<script src="js/purify.min.js" id="dom-purify-js"></script>
+<link rel="https://api.w.org/" href="https://educacaokids.com.br/wp-json/"><link rel="alternate" title="JSON" type="application/json" href="https://educacaokids.com.br/wp-json/wp/v2/pages/1332"><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://educacaokids.com.br/xmlrpc.php?rsd">
+<meta name="generator" content="WordPress 6.8.1">
+<link rel="canonical" href="https://educacaokids.com.br/grafismofonetico/">
+<link rel="shortlink" href="https://educacaokids.com.br/?p=1332">
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://educacaokids.com.br/wp-json/oembed/1.0/embed?url=https%3A%2F%2Feducacaokids.com.br%2Fgrafismofonetico%2F">
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://educacaokids.com.br/wp-json/oembed/1.0/embed?url=https%3A%2F%2Feducacaokids.com.br%2Fgrafismofonetico%2F&format=xml">
+<script>
+!function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.install=t():e.install=t()}(window,(function(){return function(e){var t={};function n(o){if(t[o])return t[o].exports;var r=t[o]={i:o,l:!1,exports:{}};return e[o].call(r.exports,r,r.exports,n),r.l=!0,r.exports}return n.m=e,n.c=t,n.d=function(e,t,o){n.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:o})},n.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},n.t=function(e,t){if(1&t&&(e=n(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var o=Object.create(null);if(n.r(o),Object.defineProperty(o,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var r in e)n.d(o,r,function(t){return e[t]}.bind(null,r));return o},n.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return n.d(t,"a",t),t},n.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},n.p="",n(n.s=0)}([function(e,t,n){"use strict";var o=this&&this.__spreadArray||function(e,t,n){if(n||2===arguments.length)for(var o,r=0,i=t.length;r<i;r++)!o&&r in t||(o||(o=Array.prototype.slice.call(t,0,r)),o[r]=t[r]);return e.concat(o||Array.prototype.slice.call(t))};Object.defineProperty(t,"__esModule",{value:!0});var r=function(e,t,n){var o,i=e.createElement("script");i.type="text/javascript",i.async=!0,i.src=t,n&&(i.onerror=function(){r(e,n)});var a=e.getElementsByTagName("script")[0];null===(o=a.parentNode)||void 0===o||o.insertBefore(i,a)};!function(e,t,n){e.KwaiAnalyticsObject=n;var i=e[n]=e[n]||[];i.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];var a=function(e,t){e[t]=function(){for(var n=[],r=0;r<arguments.length;r++)n[r]=arguments[r];var i=o([t],n,!0);e.push(i)}};i.methods.forEach((function(e){a(i,e)})),i.instance=function(e){var t,n=(null===(t=i._i)||void 0===t?void 0:t[e])||[];return i.methods.forEach((function(e){a(n,e)})),n},i.load=function(e,o){var a="https://s1.kwai.net/kos/s101/nlav11187/pixel/events.js";i._i=i._i||{},i._i[e]=[],i._i[e]._u=a,i._t=i._t||{},i._t[e]=+new Date,i._o=i._o||{},i._o[e]=o||{};var c="?sdkid=".concat(e,"&lib=").concat(n);r(t,a+c,"https://s16-11187.ap4r.com/kos/s101/nlav11187/pixel/events.js"+c)}}(window,document,"kwaiq")}])}));
+</script>
+<script>
+kwaiq.load('264391813899322');
+kwaiq.page();
+</script>
+
+<script>
+const checkButtonExistence = async () => {
+    const userId = getCookie('userId');
+
+    // Aguarda até que o userId esteja disponível
+    if (!userId) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return checkButtonExistence();
+    }
+
+    const button = document.querySelector('#InitiateCheckout');
+
+    if (button) {
+        let url = new URL(button.href);
+
+        // Se já existe "src", substitui. Se não, adiciona.
+        if (url.searchParams.has('src')) {
+            url.searchParams.set('src', userId);
+        } else {
+            url.searchParams.append('src', userId);
+        }
+
+        // Atualiza o href
+        button.href = url.toString();
+
+        // Bloqueia futuras alterações no href
+        Object.defineProperty(button, 'href', {
+            writable: false,
+            configurable: false,
+            value: url.toString()
+        });
+
+    } else {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return checkButtonExistence();
+    }
+};
+
+checkButtonExistence();
+</script>		<script type="text/javascript">
+				(function(c,l,a,r,i,t,y){
+					c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;
+					t.src="https://www.clarity.ms/tag/"+i+"?ref=wordpress";y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+				})(window, document, "clarity", "script", "gvap6fq548");
+		</script>
+		<style>.shorten_url { 
+	   padding: 10px 10px 10px 10px ; 
+	   border: 1px solid #AAAAAA ; 
+	   background-color: #EEEEEE ;
+}</style>	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><script src="js/player.js" async=""></script><script src="js/wp-emoji-release.min.js" defer=""></script></head>
+<body class="wp-singular page-template page-template-elementor_canvas page page-id-1332 wp-embed-responsive wp-theme-hello-elementor hello-elementor-default elementor-default elementor-template-canvas elementor-kit-11 elementor-page elementor-page-1332" onmousedown="return false" onselectstart="return false">
+			<div data-elementor-type="wp-page" data-elementor-id="1332" class="elementor elementor-1332" data-elementor-settings="{" ha_cmc_init_switcher":"no"}"="" data-elementor-post-type="page">
+				<div class="elementor-element elementor-element-87a0f28 e-flex e-con-boxed e-con e-parent" data-id="87a0f28" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-8336ad0 e-flex e-con-boxed e-con e-child" data-id="8336ad0" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-6aacdbf elementor-widget__width-initial elementor-absolute elementor-hidden-tablet elementor-hidden-mobile elementor-widget elementor-widget-image" data-id="6aacdbf" data-element_type="widget" id=".imagem-container" data-settings="{" _position":"absolute"}"="" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img fetchpriority="high" decoding="async" width="490" height="330" src="images/PREVIA-LATERAL.webp" class="attachment-full size-full wp-image-1353" alt="" srcset="images/PREVIA-LATERAL.webp 490w, images/PREVIA-LATERAL-300x202.webp 300w" sizes="(max-width: 490px) 100vw, 490px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-c8b3cfc elementor-widget__width-initial elementor-widget elementor-widget-image" data-id="c8b3cfc" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img decoding="async" width="892" height="526" src="images/MOCKUP-PRINCIPAL-GRAFISMO.webp" class="attachment-full size-full wp-image-1725" alt="" srcset="images/MOCKUP-PRINCIPAL-GRAFISMO.webp 892w, images/MOCKUP-PRINCIPAL-GRAFISMO-300x177.webp 300w, images/MOCKUP-PRINCIPAL-GRAFISMO-768x453.webp 768w" sizes="(max-width: 892px) 100vw, 892px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-c08f545 elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-heading" data-id="c08f545" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Seu Filho pode aprender a <mark>Ler 5x mais rápido</mark> com apenas 10 Minutos por dia!</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-1738e75 elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-text-editor" data-id="1738e75" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Descubra o <strong>método Americano de alfabetização</strong> que utiliza a <strong><span class="highlight">técnica de Grafismo Fonético</span></strong> para desenvolver leitura nas <strong>crianças</strong> de forma rápida, <strong>prática e divertida.								</strong></div><strong>
+				</strong></div><strong>
+				<div class="elementor-element elementor-element-b6083c4 elementor-align-center elementor-widget elementor-widget-button" data-id="b6083c4" data-element_type="widget" data-settings="{" _animation":"none"}"="" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm elementor-animation-grow" href="#video" id="botaum">
+						<span class="elementor-button-content-wrapper">
+									<span class="elementor-button-text">Quero meu pequeno lendo rápido!</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+				<div class="elementor-element elementor-element-347efc1 elementor-widget__width-initial elementor-widget elementor-widget-image" data-id="347efc1" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img decoding="async" width="800" height="208" src="images/WrNmdc9976631-1024x266.webp" class="attachment-large size-large wp-image-1370" alt="" srcset="images/WrNmdc9976631-1024x266.webp 1024w, images/WrNmdc9976631-300x78.webp 300w, images/WrNmdc9976631-768x200.webp 768w, images/WrNmdc9976631-1536x399.webp 1536w, images/WrNmdc9976631.webp 1600w" sizes="(max-width: 800px) 100vw, 800px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-882b18b elementor-widget elementor-widget-html" data-id="882b18b" data-element_type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<script>
+
+    var request = new XMLHttpRequest();
+
+    request.open('GET', 'https://wtfismyip.com/json', true);
+
+
+
+    request.onload = function () {
+
+        if (this.status >= 200 && this.status < 400) {
+
+            var data = JSON.parse(this.response);
+
+            let output = data.YourFuckingLocation.replace(/\,.+/g, "$'");
+
+            document.getElementById("cidade").innerHTML = output;
+
+        } else {}
+
+    };
+
+    request.onerror = function () {};
+
+    request.send();
+
+</script>				</div>
+				</div>
+					</strong></div><strong>
+				</strong></div><strong>
+					</strong></div><strong>
+				</strong></div><strong>
+		<div class="elementor-element elementor-element-2952c511 e-flex e-con-boxed e-con e-parent" data-id="2952c511" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-4df39b4c e-flex e-con-boxed e-con e-child" data-id="4df39b4c" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-f330a67 e-flex e-con-boxed e-con e-child" data-id="f330a67" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-6ad4f7a3 e-flex e-con-boxed e-con e-child" data-id="6ad4f7a3" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-4137050d ha-css-transform-yes elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="4137050d" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Por que este Método <mark>funciona melhor?</mark></h2>				</div>
+				</div>
+					</div>
+				</div>
+					</div>
+				</div>
+				<div class="elementor-element elementor-element-3c72fe29 elementor-widget-mobile__width-initial elementor-widget elementor-widget-text-editor" data-id="3c72fe29" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p align="left"><strong>A leitura é um portal essencial para todo aprendizado,</strong> influenciando diretamente o desenvolvimento e o futuro das crianças.</p><p align="left"><strong>Diferente dos métodos tradicionais,</strong> que muitas vezes tentam ensinar a leitura por meio da memorização, o <strong>Método de Grafismo Fonético,</strong> inspirado no consagrado <i>método americano</i>, entende que cada criança tem um ritmo único de aprendizado.</p><p>Por isso, oferecemos um passo a passo cuidadosamente estruturado, focado em <strong>atividades que estimulam</strong> a mente <strong>de maneira divertida e eficaz.</strong></p><h4 class="LC20lb MBeuO DKV0Md">✅ <b>Desenvolvimento rápido e sólido na leitura e compreensão</b>: O método facilita o reconhecimento de sons e formas, o que acelera o aprendizado da leitura e melhora a capacidade de interpretação de textos desde cedo.</h4><h4 class="LC20lb MBeuO DKV0Md">✅ <b>Preparação para o sucesso acadêmico</b>: Ao construir uma base sólida na leitura, o método prepara a criança para obter melhor desempenho em outras disciplinas, tornando o aprendizado mais fácil e prazeroso ao longo dos anos escolares.</h4><h4 class="LC20lb MBeuO DKV0Md">✅ <b>Aumento da autoconfiança e entusiasmo pela aprendizagem</b>: Com um progresso visível, a criança se sente mais confiante e motivada, criando uma atitude positiva em relação aos estudos e promovendo a curiosidade natural pelo conhecimento.</h4><h4 class="LC20lb MBeuO DKV0Md">✅ <b>Desenvolvimento das habilidades cognitivas essenciais</b>: O método estimula áreas fundamentais, como memória, atenção e raciocínio, preparando a criança para enfrentar desafios de forma mais estruturada e com maior capacidade de resolução de problemas.</h4><p align="left">Essa abordagem torna a <strong>leitura </strong>uma<strong> descoberta natural</strong> e envolvente, criando uma <strong>base sólida </strong>para o<strong> aprendizado</strong> e preparando a criança para o <strong>sucesso acadêmico e pessoal.</strong></p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-d546086 elementor-align-center elementor-widget elementor-widget-button" data-id="d546086" data-element_type="widget" data-settings="{" _animation":"none"}"="" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm elementor-animation-grow" href="#VALOR" id="botaum">
+						<span class="elementor-button-content-wrapper">
+									<span class="elementor-button-text">Quero meu filho(a) Lendo!</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+					</div>
+				</div>
+				<div class="elementor-element elementor-element-43dbdf8 elementor-widget__width-initial elementor-absolute elementor-widget elementor-widget-image" data-id="43dbdf8" data-element_type="widget" data-settings="{" _position":"absolute"}"="" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="254" height="235" src="images/LAPIS.webp" class="attachment-full size-full wp-image-1346" alt="">															</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-891241b e-flex e-con-boxed e-con e-parent" data-id="891241b" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-599f4c79 elementor-widget__width-initial ha-css-transform-yes elementor-widget elementor-widget-heading" data-id="599f4c79" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Veja o que Pais e educadores dizem <mark>sobre o Kit de Grafismo Fonético</mark></h2>				</div>
+				</div>
+		<div class="elementor-element elementor-element-663b1a5 e-con-full e-flex e-con e-child" data-id="663b1a5" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-b60a86b elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-html" data-id="b60a86b" data-element_type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<link rel="stylesheet" href="css/main.css">
+
+<div class="row count-c"><div clas="col" id="count">5 Comentários</div>
+
+</div><table class="fb-comments-comment"> <tbody> <tr> <td rowspan="3" class="fb-comments-comment-img"> <img decoding="async" loading="lazy" src="images/39.jpg" width="48" height="48" alt="André Azevedo | Perfil"> </td> </tr> <tr> <td class="fb-comments-comment-text"> <font class="fb-comments-comment-name"> <name>André Azevedo</name> </font><br> meus pequenos estão conseguindo ter uma evolução siguinificativa graças ao Grafismo Fonético. Quem comprar outro produto, é porque não gosta de dinheiro. </td>  </tr> <tr> <td class="fb-comments-comment-actions"> <like>Curtir</like> <reply>Responder</reply> <likes>😍❤️7</likes> <date><span>28</span> <span>min</span></date> </td> </tr> </tbody> </table><table class="fb-comments-comment"> <tbody> <tr> <td rowspan="3" class="fb-comments-comment-img"> <img decoding="async" loading="lazy" src="images/39_1.jpg" width="48" height="48" alt="Ana Oliveira | Perfil"> </td> </tr> <tr> <td class="fb-comments-comment-text"> <font class="fb-comments-comment-name"> <name>Ana Oliveira</name> </font><br> Minha filha começou a formar palavras com apenas duas semanas usando o kit. É incrível como ela evoluiu em tão pouco tempo! </td>  </tr> <tr> <td class="fb-comments-comment-actions"> <like>Curtir</like> <reply>Responder</reply> <likes>👍❤️3</likes> <date><span>55</span> <span>min</span></date> </td> </tr> </tbody> </table><table class="fb-comments-comment"> <tbody> <tr> <td rowspan="3" class="fb-comments-comment-img"> <img decoding="async" loading="lazy" src="images/94.jpg" width="48" height="48" alt="Marisa Correia | Perfil"> </td> </tr> <tr> <td class="fb-comments-comment-text"> <font class="fb-comments-comment-name"> <name>Marisa Correia</name> </font><br> Acreditem em mim, essa é a melhor compra que vocês vão fazer este ano. Não percam a chance! </td>  </tr> <tr> <td class="fb-comments-comment-actions"> <like>Curtir</like> <reply>Responder</reply> <likes>😍13</likes> <date><span>1</span> <span>h</span></date> </td> </tr> </tbody> </table><table class="fb-comments-comment"> <tbody> <tr> <td rowspan="3" class="fb-comments-comment-img"> <img decoding="async" loading="lazy" src="images/80.jpg" width="48" height="48" alt="Camila Silva | Perfil"> </td> </tr> <tr> <td class="fb-comments-comment-text"> <font class="fb-comments-comment-name"> <name>Camila Silva</name> </font><br> É incrível como algo tão simples pode fazer tanta diferença! Estou muito satisfeito com a minha compra 👌 </td>  </tr> <tr> <td class="fb-comments-comment-actions"> <like>Curtir</like> <reply>Responder</reply> <likes>👍8</likes> <date><span>2</span> <span>h</span></date> </td> </tr> </tbody> </table><table class="fb-comments-comment"> <tbody> <tr> <td rowspan="3" class="fb-comments-comment-img"> <img loading="lazy" src="images/42.jpg" width="48" height="48" alt="Breno Souza | Perfil"> </td> </tr> <tr> <td class="fb-comments-comment-text"> <font class="fb-comments-comment-name"> <name>Breno Souza</name> </font><br>O método é simples de seguir, mesmo para nós que somos pais sem experiência em ensino. É muito gratificante ver nosso filho lendo suas primeiras palavras! </td>  </tr> <tr> <td class="fb-comments-comment-actions"> <like>Curtir</like> <reply>Responder</reply> <likes>❤️😍20</likes> <date><span>5</span> <span>h</span></date> </td> </tr> </tbody> </table><div class="row face-c"><div clas="col"><img decoding="async" width="14" src="images/face-icon.png"> Plug-in social do Facebook</div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-cb3f622 elementor-align-center elementor-widget elementor-widget-button" data-id="cb3f622" data-element_type="widget" data-settings="{" _animation":"none"}"="" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm elementor-animation-grow" href="#VALOR" id="botaum">
+						<span class="elementor-button-content-wrapper">
+									<span class="elementor-button-text">Quero aplicar esse método!</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-6c53f5f e-flex e-con-boxed e-con e-parent" data-id="6c53f5f" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-d3061f2 ha-css-transform-yes elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="d3061f2" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default"><mark>📚O Que Seu Filho Vai Aprender📚</mark></h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-a1d5c07 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="a1d5c07" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="512" height="512" src="images/abc-block.png" class="attachment-full size-full wp-image-1474" alt="" srcset="images/abc-block.png 512w, images/abc-block-300x300.png 300w, images/abc-block-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Reconhecimento de Sons e Letras</h3><p class="elementor-image-box-description">Cada som é associado a <b> fortalecendo as conexões cerebrais</b> de forma sólida e duradoura.</p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-95dfb69 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="95dfb69" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="512" height="512" src="images/jigsaw.png" class="attachment-full size-full wp-image-1478" alt="" srcset="images/jigsaw.png 512w, images/jigsaw-300x300.png 300w, images/jigsaw-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Formação de Palavras</h3><p class="elementor-image-box-description"><b>Atividades dinâmicas </b>que transformam a <b>construção de palavras</b> em uma experiência divertida e intuitiva.</p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-98b6230 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="98b6230" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="512" height="512" src="images/book-1.png" class="attachment-full size-full wp-image-1476" alt="" srcset="images/book-1.png 512w, images/book-1-300x300.png 300w, images/book-1-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Compreensão e Leitura Fluente</h3><p class="elementor-image-box-description">Exercícios práticos que  <b>aprimoram a compreensão </b> do que está sendo lido, ajudando seu filho a  <b>ganhar fluência e confiança. </b></p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-2aed591 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="2aed591" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="512" height="512" src="images/read.png" class="attachment-full size-full wp-image-1477" alt="" srcset="images/read.png 512w, images/read-300x300.png 300w, images/read-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Guia Passo a Passo com Ilustrações</h3><p class="elementor-image-box-description"> <b>Instruções visuais </b> e detalhadas para que  <b>cada fase do aprendizado </b> seja clara e  <b>tranquila, sem complicações. </b></p></div></div>				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-a92c2de e-flex e-con-boxed e-con e-parent" data-id="a92c2de" data-element_type="container" id="AddToWishlist" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-0ef9989 e-con-full e-flex e-con e-child" data-id="0ef9989" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+		<div class="elementor-element elementor-element-046a8eb e-flex e-con-boxed e-con e-child" data-id="046a8eb" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-8d2c7e2 elementor-widget elementor-widget-menu-anchor" data-id="8d2c7e2" data-element_type="widget" data-widget_type="menu-anchor.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-menu-anchor" id="video"></div>
+						</div>
+				</div>
+				<div class="elementor-element elementor-element-a8bf47c ha-css-transform-yes elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="a8bf47c" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Veja como é facil<b> ensinar seu filho(a) a ler </b>com o Grafismo Fonético...
+<p><mark><br>
+
+Aperte o play👇</mark></p></h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-e207d17 elementor-widget elementor-widget-html" data-id="e207d17" data-element_type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<div id="vid_67475f192a5c4d4acb990e5c" style="position: relative; width: 100%; padding: 177.77777777777777% 0 0;"> <img decoding="async" id="thumb_67475f192a5c4d4acb990e5c" src="images/thumbnail.jpg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block;" alt="thumbnail"> <div id="backdrop_67475f192a5c4d4acb990e5c" style=" -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); position: absolute; top: 0; height: 100%; width: 100%; "></div> </div> <script type="text/javascript" id="scr_67475f192a5c4d4acb990e5c"> var s=document.createElement("script"); s.src="https://scripts.converteai.net/ee4372af-211b-489b-9e9e-5c0e6c0725aa/players/67475f192a5c4d4acb990e5c/player.js", s.async=!0,document.head.appendChild(s); </script> <style> .elementor-element:has(#smartplayer) { width: 100%; } </style>				</div>
+				</div>
+					</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-b505e30 e-flex e-con-boxed e-con e-parent" data-id="b505e30" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-d79cc1d e-con-full e-flex e-con e-child" data-id="d79cc1d" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+		<div class="elementor-element elementor-element-025c6ec e-flex e-con-boxed e-con e-child" data-id="025c6ec" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-2a2b37f ha-css-transform-yes elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="2a2b37f" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Como Funciona o <mark>Grafismo Fonético?</mark></h2>				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-6480918 e-con-full e-flex e-con e-child" data-id="6480918" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+		<div class="elementor-element elementor-element-7411c33 e-con-full e-flex e-con e-child" data-id="7411c33" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-ba84cb5 elementor-widget elementor-widget-image" data-id="ba84cb5" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="512" height="512" src="images/email_4.png" class="attachment-medium_large size-medium_large wp-image-1072" alt="" srcset="images/email_4.png 512w, images/email_4-300x300.png 300w, images/email_4-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-d4bc643 elementor-vertical-align-top elementor-widget elementor-widget-icon-box" data-id="d4bc643" data-element_type="widget" data-widget_type="icon-box.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-icon-box-wrapper">
+
+			
+						<div class="elementor-icon-box-content">
+
+									<h3 class="elementor-icon-box-title">
+						<span>
+							 CHEGA NO<br>E-MAIL 						</span>
+					</h3>
+				
+									<p class="elementor-icon-box-description">
+						Após a compra você recebe no e-mail o acesso a plataforma com arquivos em formato PDF.					</p>
+				
+			</div>
+			
+		</div>
+						</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-689b9c0 e-con-full e-flex e-con e-child" data-id="689b9c0" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-c640d6f elementor-widget elementor-widget-image" data-id="c640d6f" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="512" height="512" src="images/printer.png" class="attachment-large size-large wp-image-1073" alt="" srcset="images/printer.png 512w, images/printer-300x300.png 300w, images/printer-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-e1a49a9 elementor-vertical-align-top elementor-widget elementor-widget-icon-box" data-id="e1a49a9" data-element_type="widget" data-widget_type="icon-box.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-icon-box-wrapper">
+
+			
+						<div class="elementor-icon-box-content">
+
+									<h3 class="elementor-icon-box-title">
+						<span>
+							 VOCÊ IMPRIME						</span>
+					</h3>
+				
+									<p class="elementor-icon-box-description">
+						Você pode imprimir quando quiser, pois o acesso é VITALÍCIO e quantas vezes desejar.					</p>
+				
+			</div>
+			
+		</div>
+						</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-af70131 e-con-full e-flex e-con e-child" data-id="af70131" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-166d94b elementor-widget elementor-widget-image" data-id="166d94b" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="512" height="512" src="images/pencil.png" class="attachment-large size-large wp-image-1074" alt="" srcset="images/pencil.png 512w, images/pencil-300x300.png 300w, images/pencil-150x150.png 150w" sizes="auto, (max-width: 512px) 100vw, 512px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-6527d5b elementor-vertical-align-top elementor-widget elementor-widget-icon-box" data-id="6527d5b" data-element_type="widget" data-widget_type="icon-box.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-icon-box-wrapper">
+
+			
+						<div class="elementor-icon-box-content">
+
+									<h3 class="elementor-icon-box-title">
+						<span>
+							OS PEQUENOS<br>AMAM						</span>
+					</h3>
+				
+									<p class="elementor-icon-box-description">
+						Temos uma ótima notícia pra você, 
+MÃOS À OBRA! Importante que sempre auxilie seu pequeno nas atividades.
+					</p>
+				
+			</div>
+			
+		</div>
+						</div>
+				</div>
+				</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-bf11756 e-flex e-con-boxed e-con e-parent" data-id="bf11756" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-7fc006c elementor-widget__width-initial ha-css-transform-yes elementor-widget elementor-widget-heading" data-id="7fc006c" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Para quem é recomendado o <mark>Método de Grafismo Fonético?</mark></h2>				</div>
+				</div>
+		<div class="elementor-element elementor-element-60af69e e-con-full e-flex e-con e-child" data-id="60af69e" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-f77a234 elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="f77a234" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">1</h3><p class="elementor-image-box-description"><b>Crianças em fase de <br>alfabetização:</b> <br>
+</p><p>
+</p><p>
+Ideal para crianças que estão dando os primeiros passos na leitura, o método oferece uma abordagem estruturada e intuitiva, ajudando a desenvolver uma base sólida e segura.</p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-bb6fd0c elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="bb6fd0c" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">2</h3><p class="elementor-image-box-description"><b>Pais e educadores que buscam alternativas aos métodos tradicionais:</b> <br>
+</p><p>
+</p><p>
+Se você procura uma forma de ensino mais personalizada, que respeita o ritmo individual de cada criança, esse método é uma excelente escolha, fugindo da memorização forçada e trazendo aprendizado natural e eficaz.</p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-966c5e0 elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="966c5e0" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">3</h3><p class="elementor-image-box-description"><b>Crianças com<br> dificuldade de leitura:</b> 
+</p><p>
+</p><p>
+Para crianças que enfrentam desafios na leitura e compreensão, o Método de Grafismo Fonético oferece um suporte extra com atividades lúdicas que facilitam o entendimento dos sons e das palavras, fortalecendo a confiança e o gosto pelo aprendizado.</p></div></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-16a85b7 elementor-widget__width-initial ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="16a85b7" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">4</h3><p class="elementor-image-box-description"><b>Escolas e instituições que valorizam<br> inovação no ensino:</b> 
+</p><p>
+</p><p>
+Perfeito para escolas que buscam métodos comprovados, o grafismo fonético, inspirado no método americano, traz uma abordagem moderna que gera resultados reais e duradouros na formação dos alunos.</p></div></div>				</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-e39c12e e-flex e-con-boxed e-con e-parent" data-id="e39c12e" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-b43a9b8 elementor-widget__width-initial ha-css-transform-yes elementor-widget elementor-widget-heading" data-id="b43a9b8" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Garantindo seu acesso hoje <mark>você leva 6 SUPER BÔNUS🎁</mark></h2>				</div>
+				</div>
+		<div class="elementor-element elementor-element-2a0db54 e-con-full e-flex e-con e-child" data-id="2a0db54" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-8176bf6 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="8176bf6" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO.webp" class="attachment-full size-full wp-image-1505" alt="" srcset="images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO.webp 2000w, images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO-300x263.webp 300w, images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO-1024x896.webp 1024w, images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO-768x672.webp 768w, images/FRAFISMO-FONETICO-ALFABETO-CADERNO-COM-ALFABETO-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno Alfabeto <br>com Imagem</h3><p class="elementor-image-box-description">Apresenta cada letra do alfabeto com imagens associadas, ajudando na familiarização das crianças com as letras de forma visual e divertida.</p></div></div>				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-4227aa5 e-con-full e-flex e-con e-child" data-id="4227aa5" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-137656c elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="137656c" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO.webp" class="attachment-full size-full wp-image-1509" alt="" srcset="images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO.webp 2000w, images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO-300x263.webp 300w, images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO-1024x896.webp 1024w, images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO-768x672.webp 768w, images/GRAFISMO-FONETICO-ALFABETO-QUEBRA-CABECA-COM-ALFABETO-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno Quebra<br>Cabeça Alfabeto</h3><p class="elementor-image-box-description">Atividades de quebra-cabeça com letras do alfabeto para fixação divertida e interativa.</p></div></div>				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-5a02ea4 e-con-full e-flex e-con e-child" data-id="5a02ea4" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-104ba88 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="104ba88" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS.webp" class="attachment-full size-full wp-image-1510" alt="" srcset="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS.webp 2000w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS-300x263.webp 300w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS-1024x896.webp 1024w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS-768x672.webp 768w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-FORMANDO-PALAVRAS-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno <br>Formando Palavras</h3><p class="elementor-image-box-description">Exercícios de formação de palavras que incentivam leitura e escrita, ajudando as crianças a construir vocabulário.</p></div></div>				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-646a79b e-con-full e-flex e-con e-child" data-id="646a79b" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-4b6cc02 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="4b6cc02" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO.webp" class="attachment-full size-full wp-image-1512" alt="" srcset="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO.webp 2000w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO-300x263.webp 300w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO-1024x896.webp 1024w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO-768x672.webp 768w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-RELOGIO-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno Alfabeto <br>com Relógio</h3><p class="elementor-image-box-description">Caderno interativo que ensina as letras do alfabeto junto a um relógio, promovendo a leitura e noções de tempo de forma lúdica.</p></div></div>				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-5c20c7f e-con-full e-flex e-con e-child" data-id="5c20c7f" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-ce9a604 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="ce9a604" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO.webp" class="attachment-full size-full wp-image-1513" alt="" srcset="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO.webp 2000w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO-300x263.webp 300w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO-1024x896.webp 1024w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO-768x672.webp 768w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-TRACADO-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno <br>Alfabeto Traçado</h3><p class="elementor-image-box-description">Caderno com letras do alfabeto traçadas, perfeito para que as crianças pratiquem a escrita e melhorem sua coordenação motora.</p></div></div>				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-b26603d e-con-full e-flex e-con e-child" data-id="b26603d" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-25406a7 elementor-widget__width-initial elementor-position-top ha-has-bg-overlay elementor-widget elementor-widget-image-box" data-id="25406a7" data-element_type="widget" data-widget_type="image-box.default">
+				<div class="elementor-widget-container">
+					<div class="elementor-image-box-wrapper"><figure class="elementor-image-box-img"><img loading="lazy" decoding="async" width="2000" height="1750" src="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS.webp" class="attachment-full size-full wp-image-1514" alt="" srcset="images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS.webp 2000w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS-300x263.webp 300w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS-1024x896.webp 1024w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS-768x672.webp 768w, images/GRAFISMO-FONETICO-ALFABETO-CADERNO-ALFABETO-COM-CARINHAS-1536x1344.webp 1536w" sizes="auto, (max-width: 2000px) 100vw, 2000px"></figure><div class="elementor-image-box-content"><h3 class="elementor-image-box-title">Caderno Alfabeto <br>com Carinhas</h3><p class="elementor-image-box-description">Caderno divertido que associa cada letra do alfabeto a carinhas expressivas, ajudando as crianças a aprender com alegria e criatividade.</p></div></div>				</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-2fb7e035 e-flex e-con-boxed e-con e-parent" data-id="2fb7e035" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-0eef8ec elementor-widget__width-initial ha-css-transform-yes elementor-widget elementor-widget-heading" data-id="0eef8ec" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">⏱️Não perca mais tempo e  adquira agora o <mark>Kit de Grafismo Fonético!</mark></h2>				</div>
+				</div>
+		<div class="elementor-element elementor-element-699ae54 e-flex e-con-boxed e-con e-child" data-id="699ae54" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-a78b2c5 e-flex e-con-boxed e-con e-child" data-id="a78b2c5" data-element_type="container" id="VALOR" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-2be609c e-flex e-con-boxed e-con e-child" data-id="2be609c" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-a924184 elementor-invisible elementor-widget elementor-widget-image" data-id="a924184" data-element_type="widget" data-settings="{" _animation":"flash"}"="" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="768" height="452" src="images/MOCKUP-PRINCIPAL-768x452.webp" class="attachment-medium_large size-medium_large wp-image-1345" alt="" srcset="images/MOCKUP-PRINCIPAL-768x452.webp 768w, images/MOCKUP-PRINCIPAL-300x177.webp 300w, images/MOCKUP-PRINCIPAL.webp 888w" sizes="auto, (max-width: 768px) 100vw, 768px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-297e5d5 elementor-widget elementor-widget-heading" data-id="297e5d5" data-element_type="widget" data-settings="{" _animation_mobile":"fadeinup"}"="" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Acesso ImediatO!</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-7b8caaf elementor-widget__width-initial elementor-widget elementor-widget-text-editor" data-id="7b8caaf" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p class="_04xlpA direction-ltr align-start para-style-body"><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Atividades de Grafismo Fonético Nivel 1, 2 e 3</strong></span></p><p>✅<strong><span class="WdYUQQ text-decoration-none text-strikethrough-none">Bônus 01: </span></strong>Caderno Alfabeto com Imagem</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Bônus 02:</strong> </span>Caderno Quebra-Cabeça Alfabeto</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Bônus 03:</strong> </span>Caderno Formando Palavras</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Bônus 04: </strong></span>Caderno Alfabeto com Relógio</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Bônus 05:</strong> </span>Caderno Alfabeto Traçado</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">✅<strong>Bônus 06:</strong> </span>Caderno Alfabeto com Carinhas</p><p><span class="WdYUQQ text-decoration-none text-strikethrough-none">🙎Suporte Profissional</span></p><p>💰Garantia Incondicional</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-42cca93 elementor-widget elementor-widget-text-editor" data-id="42cca93" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>DE <del>R$197,00</del></p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-3e13ca5 elementor-widget elementor-widget-text-editor" data-id="3e13ca5" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>POR APENAS </p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-9b3a81c elementor-widget elementor-widget-text-editor" data-id="9b3a81c" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>37,00</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-638f0d8 elementor-widget elementor-widget-text-editor" data-id="638f0d8" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>ACESSO VITALÍCIO</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-05c659f elementor-widget elementor-widget-text-editor" data-id="05c659f" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>PAGAMENTO ÚNICO…</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-99a4121 elementor-align-center elementor-widget elementor-widget-button" data-id="99a4121" data-element_type="widget" data-settings="{" _animation":"none"}"="" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm elementor-animation-grow" href="https://pay.kiwify.com.br/pTGJsoG" target="_blank" id="InitiateCheckout">
+						<span class="elementor-button-content-wrapper">
+									<span class="elementor-button-text">QUERO GARANTIR O MEU KIT AGORA!</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+				<div class="elementor-element elementor-element-22f78f2 elementor-widget elementor-widget-image" data-id="22f78f2" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="768" height="60" src="images/Selo-Menor-Preto-1024x80-1-768x60.png" class="attachment-medium_large size-medium_large wp-image-1086" alt="" srcset="images/Selo-Menor-Preto-1024x80-1-768x60.png 768w, images/Selo-Menor-Preto-1024x80-1-300x23.png 300w, images/Selo-Menor-Preto-1024x80-1.png 1024w" sizes="auto, (max-width: 768px) 100vw, 768px">															</div>
+				</div>
+					</div>
+				</div>
+					</div>
+				</div>
+					</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-b10c477 e-flex e-con-boxed e-con e-parent" data-id="b10c477" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-54ab75d e-con-full e-flex e-con e-child" data-id="54ab75d" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-d568fd4 elementor-widget elementor-widget-image" data-id="d568fd4" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="242" height="236" src="images/garantia.webp" class="attachment-large size-large wp-image-1603" alt="">															</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-b57ac4a e-con-full e-flex e-con e-child" data-id="b57ac4a" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-cf7a025 elementor-widget elementor-widget-heading" data-id="cf7a025" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Seu Investimento está <b>100% SEGURO</b> com a minha<b>  GARANTIA TOTAL DE 7 DIAS.</b> </h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-325b6d2 elementor-widget__width-initial elementor-widget elementor-widget-text-editor" data-id="325b6d2" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p><strong>É muito simples e fácil…</strong> Você terá acesso ao material completo, e se em até 7 dias você achar que o conteúdo não é pra você, ou não era o que esperava, eu devolvo 100% do valor do investimento. O meu objetivo é agregar valor real para educação de nossas crianças.<br><br><strong>Plataforma segura e 100% online. </strong>Você poderá acessar o conteúdo para sempre. Acesso vitalício para você. O material ficará disponível 24 horas por dia, para que você possa acessar quantas vezes quiser, e de onde preferir, seja no celular, tablet ou computador.</p>								</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-612bd23 e-con-full e-flex e-con e-parent" data-id="612bd23" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+		<div class="elementor-element elementor-element-0832b41 e-con-full elementor-hidden-desktop elementor-hidden-tablet elementor-hidden-mobile e-flex e-con e-child" data-id="0832b41" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-3e30eea elementor-widget elementor-widget-heading" data-id="3e30eea" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Dúvidas mais comuns</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-6fe44ab elementor-align-center elementor-widget elementor-widget-button" data-id="6fe44ab" data-element_type="widget" data-settings="{" _animation_mobile":"fadeinup"}"="" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-lg elementor-animation-grow" href="https://api.whatsapp.com/send?phone=5527996678014&text=Ol%C3%A1,%20gostaria%20de%20saber%20mais%20sobre%20o%20Kit%20Educa%C3%A7%C3%A3o%20Kids!" target="_blank">
+						<span class="elementor-button-content-wrapper">
+						<span class="elementor-button-icon">
+				<svg aria-hidden="true" class="e-font-icon-svg e-fab-whatsapp" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"></path></svg>			</span>
+									<span class="elementor-button-text">TIRAR DÚVIDAS</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-b42e80a e-con-full e-flex e-con e-child" data-id="b42e80a" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-62cc42b elementor-widget elementor-widget-toggle" data-id="62cc42b" data-element_type="widget" data-widget_type="toggle.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-toggle">
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1031" class="elementor-tab-title" data-tab="1" role="button" aria-controls="elementor-tab-content-1031" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Quais são as Formas de Pagamento?</a>
+					</div>
+
+					<div id="elementor-tab-content-1031" class="elementor-tab-content elementor-clearfix" data-tab="1" role="region" aria-labelledby="elementor-tab-title-1031"><p><span style="vertical-align: inherit;"><span style="vertical-align: inherit;">Você pode pagar com qualquer cartão, boleto ou PIX.</span></span></p></div>
+				</div>
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1032" class="elementor-tab-title" data-tab="2" role="button" aria-controls="elementor-tab-content-1032" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Como acesso a plataforma?</a>
+					</div>
+
+					<div id="elementor-tab-content-1032" class="elementor-tab-content elementor-clearfix" data-tab="2" role="region" aria-labelledby="elementor-tab-title-1032"><p><span style="vertical-align: inherit;"><span style="vertical-align: inherit;">O acesso a Área de Membros é enviado para seu e-mail imediatamente após a confirmação do pagamento. Lá você poderá baixar todo o conteúdo em PDF!</span></span></p></div>
+				</div>
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1033" class="elementor-tab-title" data-tab="3" role="button" aria-controls="elementor-tab-content-1033" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Tenho que pagar todo mês?</a>
+					</div>
+
+					<div id="elementor-tab-content-1033" class="elementor-tab-content elementor-clearfix" data-tab="3" role="region" aria-labelledby="elementor-tab-title-1033"><p>Não, o pagamento é apenas uma vez e você poderá ter acesso a ele vitalício.</p></div>
+				</div>
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1034" class="elementor-tab-title" data-tab="4" role="button" aria-controls="elementor-tab-content-1034" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Posso tirar dúvidas?</a>
+					</div>
+
+					<div id="elementor-tab-content-1034" class="elementor-tab-content elementor-clearfix" data-tab="4" role="region" aria-labelledby="elementor-tab-title-1034"><p><span style="vertical-align: inherit;"><span style="vertical-align: inherit;">Sim! Basta chamar nossa equipe de suporte pelo botão de WhatsApp dessa página, pelo nosso Instagram, pelo Facebook ou por email.</span></span></p></div>
+				</div>
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1035" class="elementor-tab-title" data-tab="5" role="button" aria-controls="elementor-tab-content-1035" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Para quem é indicado o material?</a>
+					</div>
+
+					<div id="elementor-tab-content-1035" class="elementor-tab-content elementor-clearfix" data-tab="5" role="region" aria-labelledby="elementor-tab-title-1035"><p>Nossas atividades de grafismo fonético são projetadas para crianças de diferentes faixas etárias, abrangendo desde a primeira infância até o ensino fundamental.</p></div>
+				</div>
+							<div class="elementor-toggle-item">
+					<div id="elementor-tab-title-1036" class="elementor-tab-title" data-tab="6" role="button" aria-controls="elementor-tab-content-1036" aria-expanded="false">
+												<span class="elementor-toggle-icon elementor-toggle-icon-left" aria-hidden="true">
+															<span class="elementor-toggle-icon-closed"><svg class="e-font-icon-svg e-fas-caret-right" viewBox="0 0 192 512" xmlns="http://www.w3.org/2000/svg"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z"></path></svg></span>
+								<span class="elementor-toggle-icon-opened"><svg class="elementor-toggle-icon-opened e-font-icon-svg e-fas-caret-up" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M288.662 352H31.338c-17.818 0-26.741-21.543-14.142-34.142l128.662-128.662c7.81-7.81 20.474-7.81 28.284 0l128.662 128.662c12.6 12.599 3.676 34.142-14.142 34.142z"></path></svg></span>
+													</span>
+												<a class="elementor-toggle-title" tabindex="0">Quais são os benefícios Grafismos Fonéticos?</a>
+					</div>
+
+					<div id="elementor-tab-content-1036" class="elementor-tab-content elementor-clearfix" data-tab="6" role="region" aria-labelledby="elementor-tab-title-1036"><p>Os grafismos fonéticos facilitam a associação entre som e letra, desenvolvem a consciência fonológica e fortalecem a memória visual e auditiva. Eles também aprimoram a coordenação motora e tornam a leitura mais interessante, ajudando a prevenir dificuldades de leitura e incentivando o aprendizado ativo.</p></div>
+				</div>
+								</div>
+						</div>
+				</div>
+				<div class="elementor-element elementor-element-5dbcd1a elementor-hidden-desktop elementor-hidden-tablet elementor-hidden-mobile elementor-widget elementor-widget-text-editor" data-id="5dbcd1a" data-element_type="widget" data-settings="{" _animation_mobile":"fadeinup"}"="" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Ficou com mais alguma dúvida? Tire rapidamente pelo WhatsApp da nossa equipe!</p>								</div>
+				</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-49166f8 e-flex e-con-boxed e-con e-parent" data-id="49166f8" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-8c4ac47 e-con-full e-flex e-con e-child" data-id="8c4ac47" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-e675659 elementor-widget elementor-widget-image" data-id="e675659" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="300" height="90" src="images/logo-fernando-inove-mkt3-1-1024x308-1-300x90.webp" class="attachment-medium size-medium wp-image-1599" alt="" srcset="images/logo-fernando-inove-mkt3-1-1024x308-1-300x90.webp 300w, images/logo-fernando-inove-mkt3-1-1024x308-1-768x231.webp 768w, images/logo-fernando-inove-mkt3-1-1024x308-1.webp 1024w" sizes="auto, (max-width: 300px) 100vw, 300px">															</div>
+				</div>
+				</div>
+		<div class="elementor-element elementor-element-c5fa7e0 e-con-full e-flex e-con e-child" data-id="c5fa7e0" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+				<div class="elementor-element elementor-element-621f4ec elementor-widget elementor-widget-image" data-id="621f4ec" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" decoding="async" width="300" height="76" src="images/site-blindado-1-300x76.png" class="attachment-medium size-medium wp-image-209" alt="" srcset="images/site-blindado-1-300x76.png 300w, images/site-blindado-1.png 500w" sizes="auto, (max-width: 300px) 100vw, 300px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-2872bba elementor-widget elementor-widget-html" data-id="2872bba" data-element_type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<script>
+    document.addEventListener('contextmenu', event => event.preventDefault());
+</script>
+
+
+    
+<script disable-devtool-auto="" src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>				</div>
+				</div>
+				</div>
+					</div>
+				</div>
+		<div class="elementor-element elementor-element-1fb65cb e-flex e-con-boxed e-con e-parent" data-id="1fb65cb" data-element_type="container" data-settings="{" background_background":"classic","_ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+		<div class="elementor-element elementor-element-51a525c e-flex e-con-boxed e-con e-child" data-id="51a525c" data-element_type="container" data-settings="{" _ha_eqh_enable":false}"="">
+					<div class="e-con-inner">
+				<div class="elementor-element elementor-element-884f6b7 elementor-widget elementor-widget-text-editor" data-id="884f6b7" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Copyright ©2025. Todos os direitos reservados – Editora Inove</p>								</div>
+				</div>
+					</div>
+				</div>
+					</div>
+				</div>
+				</strong></div><strong>
+		<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"\/*"},{"not":{"href_matches":["\/wp-*.php","\/wp-admin\/*","\/wp-content\/uploads\/*","\/wp-content\/*","\/wp-content\/plugins\/*","\/wp-content\/themes\/hello-elementor\/*","\/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const observer = new IntersectionObserver((entries, observerInstance) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+	// EU RECOMENDO DEIXAR DO JEITO QUE ESTÁ AQUI. EM SEU SITE, ADICIONE ESSES “ID” EM SEUS ELEMENTOS.
+                if (entry.target.id === "ViewContent") {
+                    sendEvent("ViewContent");
+                } else if (entry.target.id === "AddToWishlist") {
+                    sendEvent("AddToWishlist");
+                }
+                observerInstance.unobserve(entry.target); // Para de observar após disparar o evento
+            }
+        });
+    });
+
+    ["ViewContent", "AddToWishlist"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            observer.observe(element);
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const addToCartButton = document.getElementById('AddToCart');
+    if (addToCartButton) {
+        addToCartButton.addEventListener('click', function() {
+	        sendEvent('AddToCart');
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const initiateButton = document.getElementById('InitiateCheckout');
+    if (initiateButton) {
+        initiateButton.addEventListener('click', function() {
+	        sendEvent('InitiateCheckout');
+        });
+    }
+});
+</script>			<script>
+				;
+				(function($, w) {
+					'use strict';
+					let $window = $(w);
+
+					$(document).ready(function() {
+
+						let isEnable = "";
+						let isEnableLazyMove = "";
+						let speed = isEnableLazyMove ? '0.7' : '0.2';
+
+						if( !isEnable ) {
+							return;
+						}
+
+						if (typeof haCursor == 'undefined' || haCursor == null) {
+							initiateHaCursorObject(speed);
+						}
+
+						setTimeout(function() {
+							let targetCursor = $('.ha-cursor');
+							if (targetCursor) {
+								if (!isEnable) {
+									$('body').removeClass('hm-init-default-cursor-none');
+									$('.ha-cursor').addClass('ha-init-hide');
+								} else {
+									$('body').addClass('hm-init-default-cursor-none');
+									$('.ha-cursor').removeClass('ha-init-hide');
+								}
+							}
+						}, 500);
+
+					});
+
+				}(jQuery, window));
+			</script>
+		
+		<script src="js/hello-frontend.min.js" id="hello-theme-frontend-js"></script>
+<script src="js/extension-reading-progress-bar.min.js" id="happy-reading-progress-bar-js"></script>
+<script id="happy-elementor-addons-js-extra">
+var HappyLocalize = {"ajax_url":"https:\/\/educacaokids.com.br\/wp-admin\/admin-ajax.php","nonce":"d49eb1d2b3","pdf_js_lib":"https:\/\/educacaokids.com.br\/wp-content\/plugins\/happy-elementor-addons\/assets\/vendor\/pdfjs\/lib"};
+</script>
+<script src="js/happy-addons.min.js" id="happy-elementor-addons-js"></script>
+<script id="tiktok-pixel-tracking-handle-header-js-after">
+!function (w, d, t) {
+		 w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{},ttq._partner=ttq._partner||"WordPress";var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+		 ttq.load('CTICVOJC77U8ATAVI74G');
+		 }(window, document, 'ttq');
+</script>
+<script id="tiktok-tracking-handle-header-js-after">
+ttq.instance('CTICVOJC77U8ATAVI74G').track('Pageview', {'event_id': '6823a5cc0ce2f_tt4b_woocommerce_6764d019dfe43'})
+ttq.instance('CTICVOJC77U8ATAVI74G').identify({
+            email: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            phone_number: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            first_name: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            last_name: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            zip_code: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+            })
+</script>
+<script src="js/webpack-pro.runtime.min.js" id="elementor-pro-webpack-runtime-js"></script>
+<script src="js/webpack.runtime.min.js" id="elementor-webpack-runtime-js"></script>
+<script src="js/frontend-modules.min.js" id="elementor-frontend-modules-js"></script>
+<script src="js/hooks.min.js" id="wp-hooks-js"></script>
+<script src="js/i18n.min.js" id="wp-i18n-js"></script>
+<script id="wp-i18n-js-after">
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+</script>
+<script id="elementor-pro-frontend-js-before">
+var ElementorProFrontendConfig = {"ajaxurl":"https:\/\/educacaokids.com.br\/wp-admin\/admin-ajax.php","nonce":"17b71941fc","urls":{"assets":"https:\/\/educacaokids.com.br\/wp-content\/plugins\/elementor-pro\/assets\/","rest":"https:\/\/educacaokids.com.br\/wp-json\/"},"settings":{"lazy_load_background_images":false},"popup":{"hasPopUps":false},"shareButtonsNetworks":{"facebook":{"title":"Facebook","has_counter":true},"twitter":{"title":"Twitter"},"linkedin":{"title":"LinkedIn","has_counter":true},"pinterest":{"title":"Pinterest","has_counter":true},"reddit":{"title":"Reddit","has_counter":true},"vk":{"title":"VK","has_counter":true},"odnoklassniki":{"title":"OK","has_counter":true},"tumblr":{"title":"Tumblr"},"digg":{"title":"Digg"},"skype":{"title":"Skype"},"stumbleupon":{"title":"StumbleUpon","has_counter":true},"mix":{"title":"Mix"},"telegram":{"title":"Telegram"},"pocket":{"title":"Pocket","has_counter":true},"xing":{"title":"XING","has_counter":true},"whatsapp":{"title":"WhatsApp"},"email":{"title":"Email"},"print":{"title":"Print"},"x-twitter":{"title":"X"},"threads":{"title":"Threads"}},"facebook_sdk":{"lang":"pt_BR","app_id":""},"lottie":{"defaultAnimationUrl":"https:\/\/educacaokids.com.br\/wp-content\/plugins\/elementor-pro\/modules\/lottie\/assets\/animations\/default.json"}};
+</script>
+<script src="js/frontend.min.js" id="elementor-pro-frontend-js"></script>
+<script src="js/core.min.js" id="jquery-ui-core-js"></script>
+<script id="elementor-frontend-js-before">
+var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false,"isScriptDebug":false},"i18n":{"shareOnFacebook":"Compartilhar no Facebook","shareOnTwitter":"Compartilhar no Twitter","pinIt":"Fixar","download":"Baixar","downloadImage":"Baixar imagem","fullscreen":"Tela cheia","zoom":"Zoom","share":"Compartilhar","playVideo":"Reproduzir v\u00eddeo","previous":"Anterior","next":"Pr\u00f3ximo","close":"Fechar","a11yCarouselPrevSlideMessage":"Slide anterior","a11yCarouselNextSlideMessage":"Pr\u00f3ximo slide","a11yCarouselFirstSlideMessage":"Este \u00e9 o primeiro slide","a11yCarouselLastSlideMessage":"Este \u00e9 o \u00faltimo slide","a11yCarouselPaginationBulletMessage":"Ir para o slide"},"is_rtl":false,"breakpoints":{"xs":0,"sm":480,"md":768,"lg":1025,"xl":1440,"xxl":1600},"responsive":{"breakpoints":{"mobile":{"label":"Dispositivos m\u00f3veis no modo retrato","value":767,"default_value":767,"direction":"max","is_enabled":true},"mobile_extra":{"label":"Dispositivos m\u00f3veis no modo paisagem","value":880,"default_value":880,"direction":"max","is_enabled":false},"tablet":{"label":"Tablet no modo retrato","value":1024,"default_value":1024,"direction":"max","is_enabled":true},"tablet_extra":{"label":"Tablet no modo paisagem","value":1200,"default_value":1200,"direction":"max","is_enabled":false},"laptop":{"label":"Notebook","value":1366,"default_value":1366,"direction":"max","is_enabled":false},"widescreen":{"label":"Tela ampla (widescreen)","value":2400,"default_value":2400,"direction":"min","is_enabled":false}},"hasCustomBreakpoints":false},"version":"3.28.4","is_static":false,"experimentalFeatures":{"e_font_icon_svg":true,"additional_custom_breakpoints":true,"container":true,"e_local_google_fonts":true,"theme_builder_v2":true,"hello-theme-header-footer":true,"nested-elements":true,"editor_v2":true,"home_screen":true},"urls":{"assets":"https:\/\/educacaokids.com.br\/wp-content\/plugins\/elementor\/assets\/","ajaxurl":"https:\/\/educacaokids.com.br\/wp-admin\/admin-ajax.php","uploadUrl":"https:\/\/educacaokids.com.br\/wp-content\/uploads"},"nonces":{"floatingButtonsClickTracking":"7092a65198"},"swiperClass":"swiper","settings":{"page":{"ha_cmc_init_switcher":"no"},"editorPreferences":[]},"kit":{"active_breakpoints":["viewport_mobile","viewport_tablet"],"global_image_lightbox":"yes","lightbox_enable_counter":"yes","lightbox_enable_fullscreen":"yes","lightbox_enable_zoom":"yes","lightbox_enable_share":"yes","lightbox_title_src":"title","lightbox_description_src":"description","hello_header_logo_type":"title","hello_footer_logo_type":"logo","ha_rpb_enable":"no"},"post":{"id":1332,"title":"Kit%20Atividades%20Grafismo%20Fon%C3%A9tico%20%E2%80%93%20Kit%20Educa%C3%A7%C3%A3o%20Kids","excerpt":"","featuredImage":false}};
+</script>
+<script src="js/frontend.min_1.js" id="elementor-frontend-js"></script>
+<script src="js/elements-handlers.min.js" id="pro-elements-handlers-js"></script>
+	
+
+
+
+</strong></body></html><!-- Page cached by LiteSpeed Cache 7.1 on 2025-05-13 20:04:28 -->
